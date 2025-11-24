@@ -34,60 +34,63 @@ def index():
             n = int(request.form['periodos'])
             vf = float(request.form['vf'])
 
-            # Deposito inicial minimo $50, aporte minimo $5
+            # Deposito inicial mínimo $50, aporte mínimo $5
             if v0 < 50:
-                raise ValueError("El valor inicial debe ser al menos $50.")
+                error = "El depósito inicial debe ser de al menos $50."
             elif a < 5:
-                raise ValueError("El aporte periódico debe ser al menos $5.")
-
-            # 2. Calcular con metodo de la bisección la tasa de interés
-            # Buscamos tasa entre 0.000001% y 100%
-            tasa = optimize.bisect(funcion_interes, 1e-6, 1, args=(v0, a, n, vf))
-            tasa_porcentaje = round(tasa * 100, 4)
-
-            # 3. Generar Tabla de Amortización
-            lista_datos = []
-            saldo = v0
-            sin_int = v0
-            for t in range(1, n + 1):
-                interes = saldo * tasa
-                saldo_fin = saldo + interes + a
-                sin_int += a
-                lista_datos.append({
-                    'Periodo': t, 
-                    'Saldo Inicial': saldo, 
-                    'Interés': interes, 
-                    'Aporte': a, 
-                    'Saldo Final': saldo_fin
-                })
-                saldo = saldo_fin
+                error = "El aporte periódico debe ser de al menos $5."
             
-            df = pd.DataFrame(lista_datos)
-            
-            # Convertir a HTML (usando clases de Bootstrap)
-            tabla_html = df.to_html(classes='table table-striped table-hover', 
-                                  float_format=lambda x: f"${x:,.2f}", index=False)
+            # Si pasa las validaciones, hacemos el cálculo:
+            else:
+                # 2. Calcular con metodo de la bisección
+                # Buscamos tasa entre 0.000001% y 100%
+                tasa = optimize.bisect(funcion_interes, 1e-6, 1, args=(v0, a, n, vf))
+                tasa_porcentaje = round(tasa * 100, 4)
 
-            # 4. Generar Gráfica
-            plt.figure(figsize=(8, 4))
-            plt.plot(df['Periodo'], df['Saldo Final'], label='Con Interés Compuesto', color='green')
-            plt.plot(df['Periodo'], [sin_int/n * t + v0 for t in df['Periodo']], '--', label='Sin Interés', color='gray')
-            plt.title(f'Proyección a {n} periodos')
-            plt.xlabel('Periodo')
-            plt.ylabel('Monto Acumulado ($)')
-            plt.legend()
-            plt.grid(True, alpha=0.3)
-            
-            # Guardar gráfica en memoria (para web)
-            img = io.BytesIO()
-            plt.savefig(img, format='png', bbox_inches='tight')
-            img.seek(0)
-            imagen_grafica = base64.b64encode(img.getvalue()).decode()
-            plt.close()
+                # 3. Generar Tabla de Amortización
+                lista_datos = []
+                saldo = v0
+                sin_int = v0
+                for t in range(1, n + 1):
+                    interes = saldo * tasa
+                    saldo_fin = saldo + interes + a
+                    sin_int += a
+                    lista_datos.append({
+                        'Periodo': t, 
+                        'Saldo Inicial': saldo, 
+                        'Interés': interes, 
+                        'Aporte': a, 
+                        'Saldo Final': saldo_fin
+                    })
+                    saldo = saldo_fin
+                
+                df = pd.DataFrame(lista_datos)
+                
+                # Convertir a HTML
+                tabla_html = df.to_html(classes='table table-striped table-hover', 
+                                      float_format=lambda x: f"${x:,.2f}", index=False)
 
-            resultado = tasa_porcentaje
+                # 4. Generar Gráfica
+                plt.figure(figsize=(8, 4))
+                plt.plot(df['Periodo'], df['Saldo Final'], label='Con Interés Compuesto', color='green')
+                plt.plot(df['Periodo'], [sin_int/n * t + v0 for t in df['Periodo']], '--', label='Sin Interés', color='gray')
+                plt.title(f'Proyección a {n} periodos')
+                plt.xlabel('Periodo')
+                plt.ylabel('Monto Acumulado ($)')
+                plt.legend()
+                plt.grid(True, alpha=0.3)
+                
+                # Guardar gráfica en memoria
+                img = io.BytesIO()
+                plt.savefig(img, format='png', bbox_inches='tight')
+                img.seek(0)
+                imagen_grafica = base64.b64encode(img.getvalue()).decode()
+                plt.close()
+
+                resultado = tasa_porcentaje
 
         except ValueError:
+            # Este error salta si el metodo de bisección no encuentra solución
             error = "No es posible alcanzar esa meta con los valores dados (Intenta aumentar el tiempo o el aporte)."
         except Exception as e:
             error = f"Ocurrió un error inesperado: {e}"
