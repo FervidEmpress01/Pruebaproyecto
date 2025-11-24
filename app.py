@@ -8,17 +8,17 @@ import io
 import base64
 from scipy import optimize
 
-# --- AQUÍ INICIAMOS LA APP WEB ---
+# AQUÍ INICIAMOS LA APP WEB 
 app = Flask(__name__)
 
-# --- TU LÓGICA MATEMÁTICA ---
+# Funcion para encontrar la tasa de interés
 def funcion_interes(i, v0, a, n, vf_deseado):
     if i == 0: 
         return (v0 + a * n) - vf_deseado
     monto_calculado = (v0 * (1 + i)**n) + (a * (((1 + i)**n - 1) / i))
     return monto_calculado - vf_deseado
 
-# --- RUTA PRINCIPAL (LO QUE VE EL NAVEGADOR) ---
+# Ruta principal (lo que ve el navegador)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     resultado = None
@@ -34,12 +34,18 @@ def index():
             n = int(request.form['periodos'])
             vf = float(request.form['vf'])
 
-            # 2. Calcular con Scipy
-            # Buscamos tasa entre 0.0001% y 100%
-            tasa = optimize.bisect(funcion_interes, 1e-6, 1.0, args=(v0, a, n, vf))
+            # Deposito inicial minimo $50, aporte minimo $5
+            if v0 < 50:
+                raise ValueError("El valor inicial debe ser al menos $50.")
+            elif a < 5:
+                raise ValueError("El aporte periódico debe ser al menos $5.")
+
+            # 2. Calcular con metodo de la bisección la tasa de interés
+            # Buscamos tasa entre 0.000001% y 100%
+            tasa = optimize.bisect(funcion_interes, 1e-6, 1, args=(v0, a, n, vf))
             tasa_porcentaje = round(tasa * 100, 4)
 
-            # 3. Generar Tabla con Pandas
+            # 3. Generar Tabla de Amortización
             lista_datos = []
             saldo = v0
             sin_int = v0
