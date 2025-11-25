@@ -43,37 +43,47 @@ def index():
             elif a < 5:
                 error = "El aporte periódico debe ser de al menos $5."
             else:
-                # Calculamos tasa
+                # Calculamos tasa (Usamos la misma lógica para encontrar la i)
                 tasa = optimize.bisect(funcion_interes, 1e-6, 1, args=(v0, a, n, vf))
                 tasa_porcentaje = round(tasa * 100, 4)
 
-                # --- GENERACIÓN DE TABLA (TÍTULOS ORIGINALES) ---
+                # --- GENERACIÓN DE TABLA CORREGIDA ---
                 lista_datos = []
                 saldo_actual = v0
                 sin_int = v0 
                 
                 for t in range(1, n + 1):
-                    # Lógica del profesor: Sumamos aporte AL INICIO
-                    base_calculo = saldo_actual + a
+                    # 1. Lógica de aporte (Semana 1 es 0)
+                    if t == 1:
+                        aporte_en_este_periodo = 0
+                    else:
+                        aporte_en_este_periodo = a
                     
-                    # El interés se calcula sobre (Saldo + Aporte)
-                    interes = base_calculo * tasa
+                    # 2. Sumamos aporte
+                    base_calculo = saldo_actual + aporte_en_este_periodo
                     
-                    # Saldo final
+                    # 3. Calculamos interés
+                    interes_bruto = base_calculo * tasa
+                    
+                    # Obligamos a que el interés sea solo de 2 decimales reales
+                    interes = round(interes_bruto, 2) 
+                    
+                    # 4. Saldo final
                     saldo_final = base_calculo + interes
-                    
-                    # Acumulado sin interés para la gráfica
-                    sin_int += a
 
                     lista_datos.append({
                         'Periodo': t, 
-                        'Saldo Inicial': saldo_actual,  # Mostramos lo que había al arrancar el mes
-                        'Aporte': a,                    # Mostramos el aporte
-                        'Interés': interes,             # Volvemos al nombre "Interés"
-                        'Saldo Final': saldo_final      # Volvemos al nombre "Saldo Final"
+                        'Saldo Inicial': saldo_actual,
+                        # Para mostrar en la tabla, ponemos el aporte real ($5) 
+                        # aunque en la semana 1 no se haya sumado al cálculo todavía, 
+                        # O puedes poner 'aporte_en_este_periodo' si quieres que salga $0 en la fila 1.
+                        # Lo dejaré como 'a' para que se vea que es el plan de ahorro, 
+                        # pero matemáticamente usamos 'aporte_en_este_periodo'.
+                        'Aporte': a if t > 1 else 0, # En la tabla se verá $0 en la semana 1
+                        'Interés': interes,
+                        'Saldo Final': saldo_final
                     })
                     
-                    # El final de este mes es el inicial del siguiente
                     saldo_actual = saldo_final
                 
                 df = pd.DataFrame(lista_datos)
@@ -85,7 +95,7 @@ def index():
                 # GRÁFICA
                 plt.figure(figsize=(8, 4))
                 plt.plot(df['Periodo'], df['Saldo Final'], label='Con Interés Compuesto', color='green')
-                plt.plot(df['Periodo'], [v0 + (a * t) for t in df['Periodo']], '--', label='Sin Interés', color='gray')
+                plt.plot(df['Periodo'], [v0 + (a * (t-1) if t>0 else 0) for t in df['Periodo']], '--', label='Sin Interés', color='gray')
                 plt.title(f'Proyección a {n} periodos')
                 plt.xlabel('Periodo')
                 plt.ylabel('Monto Acumulado ($)')
