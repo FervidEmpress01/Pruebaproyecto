@@ -16,7 +16,7 @@
         .card-custom {
             background: white;
             border-radius: 18px;
-            box-shadow: 0px 4px 20px rgba(0,0,0,0.12);
+            box-shadow: 0px 6px 25px rgba(0,0,0,0.15);
             padding: 25px;
             margin-top: 40px;
         }
@@ -28,14 +28,16 @@
         }
 
         .title-box {
-            background: #0d6efd;
+            background: linear-gradient(135deg, #0d6efd, #063c9c);
             color: white;
-            padding: 12px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 12px;
             text-align: center;
-            font-size: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0px 3px 10px rgba(0,0,0,0.2);
+            font-size: 22px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.25);
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.25);
         }
 
         .btn-custom {
@@ -49,6 +51,11 @@
         .btn-custom:hover {
             transform: scale(1.03);
         }
+
+        .alert-custom {
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+            border-left: 6px solid #b76e00;
+        }
     </style>
 </head>
 <body>
@@ -57,7 +64,7 @@
     <div class="card-custom">
 
         <div class="title-box">
-            <strong>Ingresa tus datos</strong>
+            ✨ <span style="font-size: 20px;">Ingresa tus datos</span> ✨
         </div>
 
         <!-- Alert placeholder -->
@@ -79,7 +86,7 @@
                 </div>
             </div>
 
-            <!-- Tasa de interés anual -->
+            <!-- Tasa anual -->
             <div class="mb-3">
                 <label class="form-label"><strong>Tasa anual (%)</strong></label>
                 <div class="input-group">
@@ -93,7 +100,7 @@
                 </div>
             </div>
 
-            <!-- Número de semanas -->
+            <!-- Semanas -->
             <div class="mb-3">
                 <label class="form-label"><strong>Número de semanas</strong></label>
                 <div class="input-group">
@@ -139,15 +146,16 @@
 document.querySelectorAll(".numeric-only").forEach(input => {
     input.addEventListener("input", function () {
 
+        // Solo números y 1 punto decimal
         let valid = /^[0-9]*\.?[0-9]*$/;   
 
         if (!valid.test(this.value)) {
-            showAlert("Solo se permiten números enteros o decimales con punto. No se admiten letras, signos ni comas.");
+            showAlert("Solo se permiten números enteros o decimales con punto. No se admiten letras, signos, comas ni símbolos.");
 
-            // ELIMINA caracteres inválidos
+            // ELIMINAR caracteres inválidos
             this.value = this.value.replace(/[^0-9.]/g, "");
 
-            // EVITA MÁS DE UN PUNTO
+            // Evitar doble punto
             const parts = this.value.split(".");
             if (parts.length > 2) {
                 this.value = parts[0] + "." + parts[1];
@@ -157,14 +165,14 @@ document.querySelectorAll(".numeric-only").forEach(input => {
 });
 
 /* ================================
-   FUNCIÓN: MENSAJES BOOTSTRAP
+   FUNCIÓN PARA MOSTRAR ALERTAS
    ================================ */
 
 function showAlert(message) {
     const alertPlaceholder = document.getElementById('alertPlaceholder');
 
     alertPlaceholder.innerHTML = `
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <div class="alert alert-warning alert-dismissible fade show alert-custom" role="alert">
             <strong>⚠ Atención:</strong> ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
