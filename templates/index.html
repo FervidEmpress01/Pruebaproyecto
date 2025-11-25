@@ -3,182 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cálculo de Interés Compuesto</title>
-
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <title>Calculadora de Ahorro MN25B</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            background: #eef2f7;
-        }
-
-        .card-custom {
-            background: white;
-            border-radius: 18px;
-            box-shadow: 0px 6px 25px rgba(0,0,0,0.15);
-            padding: 25px;
-            margin-top: 40px;
-        }
-
-        .input-group-text {
-            background: #0d6efd;
-            color: white;
-            font-weight: bold;
-        }
-
-        .title-box {
-            background: linear-gradient(135deg, #0d6efd, #063c9c);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 22px;
-            margin-bottom: 20px;
-            font-weight: bold;
-            text-shadow: 0px 2px 4px rgba(0,0,0,0.25);
-            box-shadow: 0px 4px 15px rgba(0,0,0,0.25);
-        }
-
-        .btn-custom {
-            width: 100%;
-            padding: 10px;
-            font-size: 17px;
-            border-radius: 10px;
-            transition: 0.2s;
-        }
-
-        .btn-custom:hover {
-            transform: scale(1.03);
-        }
-
-        .alert-custom {
-            box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
-            border-left: 6px solid #b76e00;
+        /* Pequeño estilo para la alerta flotante */
+        #alertPlaceholder .alert {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
         }
     </style>
 </head>
-<body>
+<body class="bg-light">
 
-<div class="container">
-    <div class="card-custom">
+<div class="container py-5">
+    <h1 class="text-center mb-4">💰 Calculadora de Interés Real</h1>
 
-        <div class="title-box">
-            ✨ <span style="font-size: 20px;">Ingresa tus datos</span> ✨
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card p-4 shadow-sm">
+                <h4>Ingresa tus datos</h4>
+
+                <!-- placeholder para las alertas bootstrap -->
+                <div id="alertPlaceholder"></div>
+
+                <form method="POST" id="calcForm">
+                    <div class="mb-3">
+                        <label>Monto Inicial ($)</label>
+                        <!-- Mantengo exactamente type=number y step=any -->
+                        <input type="number" step="any" name="v0" id="v0" class="form-control numeric" required placeholder="Ej: 1000">
+                    </div>
+                    <div class="mb-3">
+                        <label>Aporte Periódico ($)</label>
+                        <input type="number" step="any" name="aporte" id="aporte" class="form-control numeric" required placeholder="Ej: 100">
+                    </div>
+                    <div class="mb-3">
+                        <label>Número de Periodos (Meses/Semanas)</label>
+                        <input type="number" name="periodos" id="periodos" class="form-control numeric-int" required placeholder="Ej: 12">
+                    </div>
+                    <div class="mb-3">
+                        <label>Meta Final Deseada ($)</label>
+                        <input type="number" step="any" name="vf" id="vf" class="form-control numeric" required placeholder="Ej: 2500">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Calcular Tasa Necesaria</button>
+                </form>
+                
+                {% if error %}
+                    <div class="alert alert-danger mt-3">{{ error }}</div>
+                {% endif %}
+            </div>
         </div>
 
-        <!-- Alert placeholder -->
-        <div id="alertPlaceholder"></div>
-
-        <form action="/calcular" method="post">
-
-            <!-- Depósito inicial -->
-            <div class="mb-3">
-                <label class="form-label"><strong>Depósito inicial</strong></label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input 
-                        type="text" 
-                        class="form-control numeric-only"
-                        name="v0"
-                        placeholder="Ej: 100"
-                        required>
+        <div class="col-md-8">
+            {% if tasa %}
+                <div class="alert alert-success">
+                    <h3>✅ Tasa Requerida: {{ tasa }}% por periodo</h3>
                 </div>
-            </div>
 
-            <!-- Tasa anual -->
-            <div class="mb-3">
-                <label class="form-label"><strong>Tasa anual (%)</strong></label>
-                <div class="input-group">
-                    <span class="input-group-text">%</span>
-                    <input 
-                        type="text" 
-                        class="form-control numeric-only"
-                        name="isem"
-                        placeholder="Ej: 8"
-                        required>
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#grafica">Gráfica</button></li>
+                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabla">Tabla Detallada</button></li>
+                </ul>
+
+                <div class="tab-content bg-white p-3 border border-top-0">
+                    <div class="tab-pane fade show active" id="grafica">
+                        <img src="data:image/png;base64,{{ grafica }}" class="img-fluid" alt="Gráfica de ahorro">
+                    </div>
+                    <div class="tab-pane fade" id="tabla">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            {{ tabla | safe }}
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <!-- Semanas -->
-            <div class="mb-3">
-                <label class="form-label"><strong>Número de semanas</strong></label>
-                <div class="input-group">
-                    <span class="input-group-text">#</span>
-                    <input 
-                        type="text" 
-                        class="form-control numeric-only"
-                        name="n"
-                        placeholder="Ej: 52"
-                        required>
+            {% else %}
+                <div class="alert alert-info">
+                    Ingresa los datos a la izquierda para ver el análisis numérico.
                 </div>
-            </div>
-
-            <!-- Aporte semanal -->
-            <div class="mb-3">
-                <label class="form-label"><strong>Aporte semanal</strong></label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input 
-                        type="text" 
-                        class="form-control numeric-only"
-                        name="asem"
-                        placeholder="Ej: 5"
-                        required>
-                </div>
-            </div>
-
-            <button class="btn btn-primary btn-custom" type="submit">
-                Calcular Interés
-            </button>
-        </form>
+            {% endif %}
+        </div>
     </div>
 </div>
 
 <!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-/* ================================
-   VALIDACIÓN SOLO NÚMEROS Y PUNTO
-   ================================ */
+/*
+ Validación frontend estricta PARA NO ROMPER el comportamiento del servidor:
+ - Mantengo type=number en los inputs (no toco tu backend).
+ - Intercepto teclas y eventos para evitar letras, 'e', '+', '-', espacios.
+ - Convierto comas a punto automáticamente.
+ - Evito más de un punto decimal.
+ - Muestro alertas Bootstrap elegantes en #alertPlaceholder cuando el usuario intenta algo prohibido.
+*/
 
-document.querySelectorAll(".numeric-only").forEach(input => {
-    input.addEventListener("input", function () {
+const alertPlaceholder = document.getElementById('alertPlaceholder');
+let alertTimeout = null;
 
-        // Solo números y 1 punto decimal
-        let valid = /^[0-9]*\.?[0-9]*$/;   
+function showBootstrapAlert(message, type = 'warning', timeout = 3500) {
+    // Limpia la alerta anterior
+    clearTimeout(alertTimeout);
+    alertPlaceholder.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    // Auto-cerrar después de timeout ms
+    alertTimeout = setTimeout(() => {
+        const node = alertPlaceholder.querySelector('.alert');
+        if (node) {
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(node);
+            bsAlert.close();
+        }
+    }, timeout);
+}
 
-        if (!valid.test(this.value)) {
-            showAlert("Solo se permiten números enteros o decimales con punto. No se admiten letras, signos, comas ni símbolos.");
+// Keys permitidas: dígitos, punto, comas (que convertimos), teclas de control
+function isAllowedKey(event) {
+    const allowedControlKeys = [
+        'Backspace','ArrowLeft','ArrowRight','Delete','Tab','Home','End'
+    ];
+    if (allowedControlKeys.includes(event.key)) return true;
+    // Digits
+    if (/^[0-9]$/.test(event.key)) return true;
+    // Punto y coma (coma convertimos a punto en input)
+    if (event.key === '.' || event.key === ',') return true;
+    return false;
+}
 
-            // ELIMINAR caracteres inválidos
-            this.value = this.value.replace(/[^0-9.]/g, "");
+function sanitizeValue(value, allowDecimal = true) {
+    // Reemplaza comas por punto
+    value = value.replace(/,/g, '.');
+    // Elimina cualquier carácter que no sea dígito o punto
+    if (allowDecimal) {
+        value = value.replace(/[^0-9.]/g, '');
+        // Evita múltiples puntos: deja solo el primero
+        const parts = value.split('.');
+        if (parts.length > 1) {
+            value = parts[0] + '.' + parts.slice(1).join('');
+        }
+    } else {
+        // Para campos enteros: elimina todo lo que no sea dígito
+        value = value.replace(/[^0-9]/g, '');
+    }
+    return value;
+}
 
-            // Evitar doble punto
-            const parts = this.value.split(".");
-            if (parts.length > 2) {
-                this.value = parts[0] + "." + parts[1];
+// Asociamos a los inputs numéricos (decimales permitidos)
+document.querySelectorAll('input.numeric').forEach(inp => {
+    // Keydown: bloquear teclas no permitidas
+    inp.addEventListener('keydown', (e) => {
+        if (!isAllowedKey(e)) {
+            e.preventDefault();
+            showBootstrapAlert('No se permiten letras ni símbolos. Usa solo números y punto decimal.', 'warning');
+        } else {
+            // Bloquear signos + y - y e/E explícitamente en keydown
+            if (e.key === '+' || e.key === '-' || e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                showBootstrapAlert('No se permiten +, - ni notación científica (e).', 'warning');
             }
+        }
+    });
+
+    // Input: sanitizar valor (por ejemplo pegar texto)
+    inp.addEventListener('input', (e) => {
+        const original = inp.value;
+        const cleaned = sanitizeValue(original, true);
+
+        if (original !== cleaned) {
+            inp.value = cleaned;
+            showBootstrapAlert('Entrada corregida: solo se aceptan números y un punto decimal. Las comas se convirtieron a punto.', 'warning');
+        }
+
+        // Evitar valor negativo (al pegar algo con -)
+        if (inp.value.startsWith('-')) {
+            inp.value = inp.value.replace(/-/g, '');
+            showBootstrapAlert('No se permiten números negativos.', 'danger');
         }
     });
 });
 
-/* ================================
-   FUNCIÓN PARA MOSTRAR ALERTAS
-   ================================ */
+// Para campos que deben ser enteros (periodos)
+document.querySelectorAll('input.numeric-int').forEach(inp => {
+    inp.addEventListener('keydown', (e) => {
+        if (!isAllowedKey(e)) {
+            e.preventDefault();
+            showBootstrapAlert('Este campo solo acepta números enteros (sin punto).', 'warning');
+        } else {
+            // bloquear punto/coma, e, +, -
+            if (e.key === '.' || e.key === ',' || e.key === '+' || e.key === '-' || e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                showBootstrapAlert('Este campo solo acepta números enteros. No use punto, coma, +, - ni notación científica.', 'warning');
+            }
+        }
+    });
 
-function showAlert(message) {
-    const alertPlaceholder = document.getElementById('alertPlaceholder');
+    inp.addEventListener('input', (e) => {
+        const original = inp.value;
+        const cleaned = sanitizeValue(original, false);
 
-    alertPlaceholder.innerHTML = `
-        <div class="alert alert-warning alert-dismissible fade show alert-custom" role="alert">
-            <strong>⚠ Atención:</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-}
+        if (original !== cleaned) {
+            inp.value = cleaned;
+            showBootstrapAlert('Entrada corregida: solo números enteros permitidos.', 'warning');
+        }
+    });
+});
+
+// Evitar que el formulario se envíe si los campos están vacíos o con un punto solo
+document.getElementById('calcForm').addEventListener('submit', function (e) {
+    const fields = ['v0','aporte','periodos','vf'];
+    for (let name of fields) {
+        const el = document.querySelector(`[name="${name}"]`);
+        if (!el) continue;
+        const val = el.value.trim();
+        if (val === '' || val === '.' ) {
+            e.preventDefault();
+            showBootstrapAlert('Por favor ingresa valores válidos en todos los campos antes de calcular.', 'danger');
+            return false;
+        }
+    }
+    // deja que el formulario continúe (backend manejará conversiones/validaciones finales)
+});
 </script>
-
 </body>
 </html>
