@@ -3,112 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Ahorro MN25B</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Cálculo de Interés Compuesto</title>
 
-    <script>
-        function validarNumero(input) {
-            // Reemplazar coma por punto
-            input.value = input.value.replace(",", ".");
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-            // Bloquear notación científica y símbolos no deseados
-            input.value = input.value.replace(/[eE+\-]/g, "");
-
-            // Impedir valores negativos
-            if (input.value !== "" && parseFloat(input.value) < 0) {
-                input.value = "";
-                alert("No se permiten números negativos.");
-            }
+    <style>
+        body {
+            background: #eef2f7;
         }
-    </script>
+
+        .card-custom {
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0px 4px 20px rgba(0,0,0,0.12);
+            padding: 25px;
+            margin-top: 40px;
+        }
+
+        .input-group-text {
+            background: #0d6efd;
+            color: white;
+            font-weight: bold;
+        }
+
+        .title-box {
+            background: #0d6efd;
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0px 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-custom {
+            width: 100%;
+            padding: 10px;
+            font-size: 17px;
+            border-radius: 10px;
+            transition: 0.2s;
+        }
+
+        .btn-custom:hover {
+            transform: scale(1.03);
+        }
+    </style>
 </head>
+<body>
 
-<body class="bg-light">
+<div class="container">
+    <div class="card-custom">
 
-<div class="container py-5">
-    <h1 class="text-center mb-4">💰 Calculadora de Interés Real</h1>
+        <div class="title-box">
+            <strong>Ingresa tus datos</strong>
+        </div>
 
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card p-4 shadow-sm">
-                <h4>Ingresa tus datos</h4>
+        <!-- Alert placeholder -->
+        <div id="alertPlaceholder"></div>
 
-                <form method="POST">
-                    <div class="mb-3">
-                        <label>Monto Inicial ($)</label>
-                        <input type="text" name="v0" class="form-control"
-                               required placeholder="Ej: 1000"
-                               oninput="validarNumero(this)">
-                    </div>
+        <form action="/calcular" method="post">
 
-                    <div class="mb-3">
-                        <label>Aporte Periódico ($)</label>
-                        <input type="text" name="aporte" class="form-control"
-                               required placeholder="Ej: 100"
-                               oninput="validarNumero(this)">
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Número de Periodos</label>
-                        <input type="text" name="periodos" class="form-control"
-                               required placeholder="Ej: 12"
-                               oninput="validarNumero(this)">
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Meta Final Deseada ($)</label>
-                        <input type="text" name="vf" class="form-control"
-                               required placeholder="Ej: 2500"
-                               oninput="validarNumero(this)">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Calcular Tasa Necesaria
-                    </button>
-                </form>
-
-                {% if error %}
-                    <div class="alert alert-danger mt-3">{{ error }}</div>
-                {% endif %}
+            <!-- Depósito inicial -->
+            <div class="mb-3">
+                <label class="form-label"><strong>Depósito inicial</strong></label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input 
+                        type="text" 
+                        class="form-control numeric-only"
+                        name="v0"
+                        placeholder="Ej: 100"
+                        required>
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-8">
-            {% if tasa %}
-                <div class="alert alert-success">
-                    <h3>✅ Tasa Requerida: {{ tasa }}% por periodo</h3>
+            <!-- Tasa de interés anual -->
+            <div class="mb-3">
+                <label class="form-label"><strong>Tasa anual (%)</strong></label>
+                <div class="input-group">
+                    <span class="input-group-text">%</span>
+                    <input 
+                        type="text" 
+                        class="form-control numeric-only"
+                        name="isem"
+                        placeholder="Ej: 8"
+                        required>
                 </div>
+            </div>
 
-                <ul class="nav nav-tabs">
-                    <li class="nav-item">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#grafica">Gráfica</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabla">Tabla Detallada</button>
-                    </li>
-                </ul>
-
-                <div class="tab-content bg-white p-3 border border-top-0">
-                    <div class="tab-pane fade show active" id="grafica">
-                        <img src="data:image/png;base64,{{ grafica }}" class="img-fluid">
-                    </div>
-
-                    <div class="tab-pane fade" id="tabla">
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            {{ tabla | safe }}
-                        </div>
-                    </div>
+            <!-- Número de semanas -->
+            <div class="mb-3">
+                <label class="form-label"><strong>Número de semanas</strong></label>
+                <div class="input-group">
+                    <span class="input-group-text">#</span>
+                    <input 
+                        type="text" 
+                        class="form-control numeric-only"
+                        name="n"
+                        placeholder="Ej: 52"
+                        required>
                 </div>
+            </div>
 
-            {% else %}
-                <div class="alert alert-info">
-                    Ingresa los datos a la izquierda para ver el análisis numérico.
+            <!-- Aporte semanal -->
+            <div class="mb-3">
+                <label class="form-label"><strong>Aporte semanal</strong></label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input 
+                        type="text" 
+                        class="form-control numeric-only"
+                        name="asem"
+                        placeholder="Ej: 5"
+                        required>
                 </div>
-            {% endif %}
-        </div>
+            </div>
+
+            <button class="btn btn-primary btn-custom" type="submit">
+                Calcular Interés
+            </button>
+        </form>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ================================
+   VALIDACIÓN SOLO NÚMEROS Y PUNTO
+   ================================ */
+
+document.querySelectorAll(".numeric-only").forEach(input => {
+    input.addEventListener("input", function () {
+
+        let valid = /^[0-9]*\.?[0-9]*$/;   
+
+        if (!valid.test(this.value)) {
+            showAlert("Solo se permiten números enteros o decimales con punto. No se admiten letras, signos ni comas.");
+
+            // ELIMINA caracteres inválidos
+            this.value = this.value.replace(/[^0-9.]/g, "");
+
+            // EVITA MÁS DE UN PUNTO
+            const parts = this.value.split(".");
+            if (parts.length > 2) {
+                this.value = parts[0] + "." + parts[1];
+            }
+        }
+    });
+});
+
+/* ================================
+   FUNCIÓN: MENSAJES BOOTSTRAP
+   ================================ */
+
+function showAlert(message) {
+    const alertPlaceholder = document.getElementById('alertPlaceholder');
+
+    alertPlaceholder.innerHTML = `
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <strong>⚠ Atención:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+}
+</script>
+
 </body>
 </html>
