@@ -1,29 +1,36 @@
 from flask import Flask, render_template, request
 import pandas as pd
 import matplotlib
-# Configuración IMPORTANTE para servidores (evita errores de pantalla)
 matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import io
 import base64
 from scipy import optimize
 
-# --- AQUÍ INICIAMOS LA APP WEB ---
 app = Flask(__name__)
 
-# --- FÓRMULA DE ANUALIDAD ANTICIPADA (ESTILO PROFESOR) ---
+# --- FÓRMULA CORREGIDA
 def funcion_interes(i, v0, a, n, vf_deseado):
     if i == 0: 
-        return (v0 + a * n) - vf_deseado
+        # Si i es 0, es v0 + (n-1) aportes, porque el primero no se hace
+        return (v0 + a * (n - 1)) - vf_deseado
     
-    # El aporte gana interés desde el inicio del periodo (Anticipada)
+    # 1. El Valor Inicial crece por n periodos
     parte_v0 = v0 * (1 + i)**n
-    parte_aportes = a * (((1 + i)**n - 1) / i) * (1 + i) 
+    
+    # 2. Los aportes son UNA MENOS (n - 1) porque en la semana 1 no hubo aporte.
+    #    Siguen siendo "anticipados" (generan interés en su periodo), 
+    #    por eso multiplicamos por (1+i) al final.
+    periodos_aportes = n - 1
+    if periodos_aportes > 0:
+        parte_aportes = a * (((1 + i)**periodos_aportes - 1) / i) * (1 + i)
+    else:
+        parte_aportes = 0
     
     monto_calculado = parte_v0 + parte_aportes
     return monto_calculado - vf_deseado
 
-# --- RUTA PRINCIPAL ---
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     resultado = None
@@ -43,52 +50,40 @@ def index():
             elif a < 5:
                 error = "El aporte periódico debe ser de al menos $5."
             else:
-                # Calculamos tasa (Usamos la misma lógica para encontrar la i)
+                # Calculamos tasa
                 tasa = optimize.bisect(funcion_interes, 1e-6, 1, args=(v0, a, n, vf))
                 tasa_porcentaje = round(tasa * 100, 4)
 
-                # --- GENERACIÓN DE TABLA CORREGIDA ---
+                # --- TABLA (Mantenemos la lógica visual que ya arreglamos) ---
                 lista_datos = []
                 saldo_actual = v0
                 sin_int = v0 
                 
                 for t in range(1, n + 1):
-                    # 1. Lógica de aporte (Semana 1 es 0)
+                    # Semana 1: Aporte 0. Semana 2 en adelante: Aporte A.
                     if t == 1:
-                        aporte_en_este_periodo = 0
+                        aporte_real = 0
                     else:
-                        aporte_en_este_periodo = a
+                        aporte_real = a
                     
-                    # 2. Sumamos aporte
-                    base_calculo = saldo_actual + aporte_en_este_periodo
+                    # Lógica Anticipada: Sumamos aporte antes de calcular interés
+                    base_calculo = saldo_actual + aporte_real
                     
-                    # 3. Calculamos interés
-                    interes_bruto = base_calculo * tasa
-                    
-                    # Obligamos a que el interés sea solo de 2 decimales reales
-                    interes = round(interes_bruto, 2) 
-                    
-                    # 4. Saldo final
+                    interes = base_calculo * tasa
                     saldo_final = base_calculo + interes
+                    
+                    sin_int += aporte_real
 
                     lista_datos.append({
                         'Periodo': t, 
                         'Saldo Inicial': saldo_actual,
-                        # Para mostrar en la tabla, ponemos el aporte real ($5) 
-                        # aunque en la semana 1 no se haya sumado al cálculo todavía, 
-                        # O puedes poner 'aporte_en_este_periodo' si quieres que salga $0 en la fila 1.
-                        # Lo dejaré como 'a' para que se vea que es el plan de ahorro, 
-                        # pero matemáticamente usamos 'aporte_en_este_periodo'.
-                        'Aporte': a if t > 1 else 0, # En la tabla se verá $0 en la semana 1
+                        'Aporte': a if t > 1 else 0, # Visualmente mostramos 0 en la primera
                         'Interés': interes,
                         'Saldo Final': saldo_final
                     })
-                    
                     saldo_actual = saldo_final
                 
                 df = pd.DataFrame(lista_datos)
-                
-                # HTML
                 tabla_html = df.to_html(classes='table table-striped table-hover', 
                                       float_format=lambda x: f"${x:,.2f}", index=False)
 
